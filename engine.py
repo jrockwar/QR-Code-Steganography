@@ -5,12 +5,12 @@ import os.path
 import sys
 
 class Encoder:
-    default = "default.png"
-    default_dir = "."
+    default_dir = os.path.split(__file__)[0]
+    default = default_dir + "\\default.png"
     _length_data_line = 0
 
     def __init__(self, img=None):
-        self.img = img if (img is not None and not os.path.isfile(img)) else self.default
+        self._img = img if (img is not None and not os.path.isfile(img)) else self.default
         self._init_file_info()
         self._init_img()
 
@@ -20,26 +20,28 @@ class Encoder:
 
     @image.setter
     def image(self, new):
-        self.img = new
+        self._img = new
         self._init_file_info()
         self._init_img()
 
     @image.deleter
     def image(self):
-        self.img = self.default
+        self._img = self.default
+        self._init_file_info()
+        self._init_img()
 
     def _init_file_info(self):
         try:
-            self.img = self.default if self.img is None else self.img
-            self._name, self._ext = os.path.splitext(self.img)
+            self._img = self.default if self._img is None else self._img
+            self._name, self._ext = os.path.splitext(self._img)
         except:
             raise Exception("Path invalid.")
 
     def _init_img(self):
-        try:
-            self.img = Image.open(self.img)
-        except:
-            raise FileNotFoundError(f"'{self._name+self._ext}' was not found in {sys.path}.\nPlease check if the file exists.")
+        #try:
+            self.img = Image.open(self._img)
+        #except:
+         #   raise FileNotFoundError(f"'{self._name+self._ext}' was not found in {sys.path}.\nPlease check if the file exists.")
 
     def fetch_qr(self, data, show=False):
         try:
@@ -102,7 +104,7 @@ class Encoder:
         img_top.putdata([tuple(i) for i in new_top])
         self.img.paste(img_top, (0, 0))
 
-    def encode(self, data, dest_dir=".", save=None, show_input=False, show_qr=False, show_result=False):
+    def encode(self, data, dest_dir="", save=None, show_input=False, show_qr=False, show_result=False):
         if show_input:
             self.img.show()
 
@@ -117,22 +119,22 @@ class Encoder:
         qr_img = np.array(self.img.crop((0, 0, *qr.shape)))
         qr_cover = Image.fromarray(np.concatenate((np.vectorize(self._encode_pix)(qr, qr_img[..., 0])[..., np.newaxis], qr_img[..., 1:]), axis=2)[1:].astype("uint8"))
         
-        full = f"{dest_dir}\{self._name if save is None else save}{'-hidden' * (1-bool(save))}{self._ext}"
+        full = f"{self._name if save is None else save}{'-hidden' * int(not bool(save))}{self._ext}"
         self.img.paste(qr_cover, (0, 1))
         self.img.save(full)
 
         if show_result:
-            self.img.crop.show()
+            self.img.crop().show()
 
         return self.img, full
 
 class Decoder:
-    default = "default-hidden.png"
-    default_dir = "."
+    default_dir = os.path.split(__file__)[0]
+    default = default_dir + "\\default-hidden.png"
     _min_out_size = 500
 
     def __init__(self, img=None):
-        self.img = img if (img is not None and not os.path.isfile(img)) else self.default
+        self._img = img if (img is not None and not os.path.isfile(img)) else self.default
         self._init_file_info()
         self._init_img()
 
@@ -142,7 +144,7 @@ class Decoder:
 
     @image.setter
     def image(self, new):
-        self.img = new
+        self._img = new
         self._init_file_info()
         self._init_img()
 
@@ -152,18 +154,18 @@ class Decoder:
 
     def _init_file_info(self):
         try:
-            self.img = self.default if self.img is None else self.img
-            self._name, self._ext = os.path.splitext(self.img)
+            self._img = self.default if self._img is None else self._img
+            self._name, self._ext = os.path.splitext(self._img)
         except:
             raise Exception("Path invalid.")
 
     def _init_img(self):
         try:
-            self.img = Image.open(self.img)
+            self.img = Image.open(self._img)
         except:
             raise FileNotFoundError(f"'{self._name+self._ext}' was not found in {sys.path}.\nPlease check if the file exists.")
 
-    def decode(self, dest_dir=".", save=None, show=False):
+    def decode(self, dest_dir="", save=None, show=False):
         if not os.path.isdir(dest_dir):
             dest_dir = self.default_dir
 
@@ -185,7 +187,7 @@ class Decoder:
         if qr.size[0] < 500:
             qr = qr.resize(list(map(lambda i: int(np.ceil(self._min_out_size/i)) * i, qr.size)))
 
-        full = f"{dest_dir}\{self._name if save is None else save}{'-qr' * (1-bool(save))}{self._ext}"
+        full = f"{self._name if save is None else save}{'-qr' * (1-bool(save))}{self._ext}"
         qr.save(full)
 
         if show:
@@ -194,7 +196,8 @@ class Decoder:
         return qr, full
 
 def test_qr():
-    Decoder(Encoder().encode("https://duckduckgo.com/")[1]).decode()[0].show()
+    img, name = Encoder().encode("https://duckduckgo.com/", show_input=True, show_result=True)
+    qr = Decoder().decode(name, show=True)[0]
 
 if __name__ == "__main__":
     test_qr()
