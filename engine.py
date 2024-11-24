@@ -6,11 +6,11 @@ import sys
 
 class Encoder:
     default_dir = os.path.split(__file__)[0]
-    default = default_dir + "\\default.png"
+    default = os.path.join(default_dir, "default.png")
     _length_data_line = 0
 
     def __init__(self, img=None):
-        self._img = img if (img is not None and not os.path.isfile(img)) else self.default
+        self._img = img if (img is not None and os.path.isfile(img)) else self.default
         self._init_file_info()
         self._init_img()
 
@@ -130,11 +130,11 @@ class Encoder:
 
 class Decoder:
     default_dir = os.path.split(__file__)[0]
-    default = default_dir + "\\default-hidden.png"
+    default = os.path.join(default_dir, "default-hidden.png")
     _min_out_size = 500
 
     def __init__(self, img=None):
-        self._img = img if (img is not None and not os.path.isfile(img)) else self.default
+        self._img = img if (img is not None and os.path.isfile(img)) else self.default
         self._init_file_info()
         self._init_img()
 
